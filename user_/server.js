@@ -1,10 +1,19 @@
 const express = require('express'); // express 임포트
 const app = express(); // app생성
 const bodyParser = require('body-parser');
+const cors = require("cors");
 const port = 5000;
 const { User } = require('./models/User'); 
 const { auth } = require("./middleware/auth");
 const cookieParser = require("cookie-parser");
+
+app.use(
+  cors({
+    origin: true,
+    credentials: true, //도메인이 다른경우 서로 쿠키등을 주고받을때 허용해준다고 한다
+  })
+);
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -102,6 +111,17 @@ app.get("/auth", auth, (req, res) => {
     lastname: req.user.lastname,
     role: req.user.role,
     image: req.user.image,
+  });
+});
+
+//user_id를 찾아서(auth를 통해 user의 정보에 들어있다) db에있는 토큰값을 비워준다
+app.get("/logout", auth, (req, res) => {
+  User.findOneAndUpdate({ _id: req.user._id }, { token: "" }, (err, user) => {
+    if (err) return res.json({ success: false, err });
+    res.clearCookie("x_auth");
+    return res.status(200).send({
+      success: true,
+    });
   });
 });
 
